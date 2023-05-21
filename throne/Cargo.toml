@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 iron = {path = "../"}
+pollster = "0.2"

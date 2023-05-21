@@ -1,6 +1,5 @@
 fn main() {
 
     let title = String::from("Throne");
-    iron::graphics::window::window(title, 640, 480);
+    pollster::block_on(iron::graphics::window::run(title, 640, 480));
 }
-
