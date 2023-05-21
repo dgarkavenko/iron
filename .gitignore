@@ -1,0 +1,6 @@
+/.vscode
+/target
+/Cargo.lock
+/throne/.vscode
+/throne/Cargo.lock
+/throne/target

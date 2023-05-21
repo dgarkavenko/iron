@@ -1,0 +1,11 @@
+[package]
+name = "iron"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+env_logger = "0.10.0"
+log = "0.4.17"
+thiserror = "1.0.40"
+winit = "0.27.0"
+wgpu = "0.15"
