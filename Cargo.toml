@@ -9,3 +9,4 @@ log = "0.4.17"
 thiserror = "1.0.40"
 winit = "0.27.0"
 wgpu = "0.15"
+bytemuck = { version = "1.12", features = [ "derive" ] }
