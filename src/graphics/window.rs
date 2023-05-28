@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -6,7 +8,10 @@ use winit::{
 
 use crate::graphics::state::State;
 
-pub async fn run(title : String, width : i32, height: i32) {
+pub async fn run<F>(title : String, width : i32, height: i32, mut state_handler: F)
+where
+    F: FnMut(&mut State , Option<&WindowEvent>, &mut ControlFlow, f32) + 'static,
+{
 
     let event_loop = EventLoop::new();
 
@@ -17,32 +22,36 @@ pub async fn run(title : String, width : i32, height: i32) {
     let window = window_builder.build(&event_loop).unwrap();
     let mut state = State::new(window).await;
     
-    event_loop.run(move |event, _, control_flow| {
+    let mut now: Instant = Instant::now();
+
+
+    event_loop.run(move |event: Event<()>, _, control_flow| {
+        
+        state_handler(
+            &mut state,
+            match event { 
+                Event::WindowEvent { ref event, window_id } => Some(event),
+                _ => None
+            },
+            control_flow,
+            now.elapsed().as_secs_f32()
+        );
+
+        now = Instant::now();
+
         match event {
             
             Event::WindowEvent { ref event, window_id } if window_id == state.window().id() => {
-                if !state.input(event) {
-                    match event {
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-                        
-                        WindowEvent::Resized(physical_size) => {
-                            state.resize(*physical_size);
-                        }
-                        
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            state.resize(**new_inner_size);
-                        }
-                        _ => {}
+                
+                match event {
+                    WindowEvent::Resized(physical_size) => {
+                        state.resize(*physical_size);
                     }
+                    
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        state.resize(**new_inner_size);
+                    }
+                    _ => {}
                 }
             }
 
