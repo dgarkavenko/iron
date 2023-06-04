@@ -1,100 +1,42 @@
-use std::time::Instant;
-
-use winit::{
-    event::*,
-    event_loop::ControlFlow,
-};
-
-use iron::graphics::state;
-
-enum Actions{
-    ZoomIn,
-    ZoomOut,
-    Left,
-    Right,
-}
-
-struct Inputs{
-    key : VirtualKeyCode,
-    state : bool,
-    action : Actions
-}
-
-impl Inputs{
-    fn new(key : VirtualKeyCode, state : bool, action : Actions) -> Self
-    {
-        Inputs {
-            key,
-            state,
-            action,
-        }
-    }
-}
+use iron::*;
 
 fn main() {
 
-    let mut inputs = [
-        Inputs::new(VirtualKeyCode::A, false, Actions::Left),
-        Inputs::new(VirtualKeyCode::D, false, Actions::Right),
-        Inputs::new(VirtualKeyCode::W, false, Actions::ZoomIn),
-        Inputs::new(VirtualKeyCode::S, false, Actions::ZoomOut),
-    ];
+    //ecs -- transfrom mesh render
+    //read entities from files
+
+    let mut current_measurment = 0;
+    let mut measurements : [f32; 10] = [1.0 / 60.0; 10];
 
     let title = String::from("Throne");
-    pollster::block_on(iron::graphics::window::run(title, 640, 480,
-        move | render_state, event, control_flow, delta_time  |
+
+    pollster::block_on(iron::graphics::flow::run(title, 640, 480,
+
+        move | render_state, control_flow, inputs, delta_time  |
         {
-            match event {
-                Some(window_event) => {
-                    match window_event {
-
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-
-                        WindowEvent::KeyboardInput {
-                            input: KeyboardInput {
-                                state,
-                                virtual_keycode: Some(keycode),
-                                ..
-                            },
-                            ..
-                        } => {
-                            
-                            for (_i, elem) in inputs.iter_mut().enumerate() {
-                                if elem.key == *keycode
-                                {
-                                    elem.state = if *state == ElementState::Pressed {true} else {false}
-                                }
-                            }
-                            
-                        }
-
-                        _ => (),
-                    }
-                },
-                None => (),
-            }
-
-            for (_i, elem) in inputs.iter_mut().enumerate() {
-                match elem.action
+            for (key, state) in &inputs.0 {
+                match (key, state)
                 {
-                    Actions::ZoomIn if elem.state => {render_state.camera.fovy -= delta_time * 10.0},
-                    Actions::ZoomOut if elem.state => {render_state.camera.fovy += delta_time * 10.0},
-                    Actions::Left if elem.state => {render_state.camera.target.x -= delta_time * 10.0},
-                    Actions::Right if elem.state => {render_state.camera.target.x += delta_time * 10.0},
+                    (VirtualKeyCode::E, InputState::Pressed(true)) => {render_state.camera.fovy += 10.0},
+                    (VirtualKeyCode::A, InputState::Pressed(_)) =>  {render_state.camera.target.x -= delta_time * 10.0},
+                    (VirtualKeyCode::D, InputState::Pressed(_)) =>  {render_state.camera.target.x += delta_time * 10.0},
+                    (VirtualKeyCode::W, InputState::Pressed(_)) =>  {render_state.camera.eye.z -= delta_time * 10.0},
+                    (VirtualKeyCode::S, InputState::Pressed(_)) =>  {render_state.camera.eye.z += delta_time * 10.0},
+                    (VirtualKeyCode::Space, InputState::Pressed(_)) =>  {render_state.camera.eye.y += delta_time * 10.0},
+
                     _ => ()
                 }
             }
 
-        }
-    ));
+            if inputs.get_key(VirtualKeyCode::Q) == InputState::Released(true){
+                render_state.camera.fovy -= 10.0;
+            }
 
+            current_measurment = (current_measurment + 1) % measurements.len();
+            measurements[current_measurment] = delta_time;
+            let mut av : f32 = measurements.iter().sum();
+            av = av / measurements.len() as f32;
+            println!("fps: {:.1}", 1.0 / av );
+        },
+    ));
 }   
